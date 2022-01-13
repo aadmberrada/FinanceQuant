@@ -1,0 +1,361 @@
+---
+title: "TP1"
+author: "Abdoul Aziz Berrada - Amira Slimene - Rachid Krita - Nicolas Turpin"
+date: "12/25/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+options(warn=-1)
+library(readxl)
+library(matrixStats)
+library(DataCombine)
+library(dplyr)
+library(Hmisc)
+library(stats)
+library(factoextra)
+library(FactoMineR)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(Metrics)
+library(Rcpp)
+```
+
+
+```{r}
+# Chargement des données
+mr    = read_excel("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/datacluster.xlsx", 
+                   sheet = "monthly returns")
+msci  = read_excel("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/datacluster.xlsx", 
+                  sheet = "MSCI", col_types = c("date", 
+         "numeric", "numeric"))
+bp    = read_excel("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/datacluster.xlsx", 
+                  sheet = "PtoB")
+```
+## Calcul de la volatilité
+```{r}
+#Calcul de l'Ecart type
+
+mr[, c(2:84)] <- sapply(mr[, c(2:84)], as.numeric)
+#str(mr)
+mr$volatily = sqrt(rowVars(as.matrix(mr[,c(-1)])))
+
+```
+
+Pour calculer les variations en % entre t et t-1, on va appliquer la formule X_t-X_{t-1}/X_{t-1} avec X_{t-1} = Lag(X_t, 1).
+
+```{r}
+# Création des lags
+# % = (Xt - Xt-1) / Xt-1
+ptb_df = bp
+ptb_df$`MC FP Equity`     = (ptb_df$`MC FP Equity` - Lag(ptb_df$`MC FP Equity`, 1)) / Lag(ptb_df$`MC FP Equity`, 1)
+ptb_df$`ASML NA Equity`   = (ptb_df$`ASML NA Equity` - Lag(ptb_df$`ASML NA Equity`, 1)) / Lag(ptb_df$`ASML NA Equity`, 1)
+ptb_df$`OR FP Equity`     = (ptb_df$`OR FP Equity` - Lag(ptb_df$`OR FP Equity`, 1)) / Lag(ptb_df$`OR FP Equity`, 1)
+ptb_df$`SAP GR Equity`    = (ptb_df$`SAP GR Equity` - Lag(ptb_df$`SAP GR Equity`, 1)) / Lag(ptb_df$`SAP GR Equity`, 1)
+ptb_df$`SIE GR Equity`    = (ptb_df$`SIE GR Equity` - Lag(ptb_df$`SIE GR Equity`, 1)) / Lag(ptb_df$`SIE GR Equity`, 1)
+ptb_df$`VOW3 GR Equity`   = (ptb_df$`VOW3 GR Equity` - Lag(ptb_df$`VOW3 GR Equity`, 1)) / Lag(ptb_df$`VOW3 GR Equity`, 1)
+ptb_df$`TTE FP Equity`    = (ptb_df$`TTE FP Equity` - Lag(ptb_df$`TTE FP Equity`, 1)) / Lag(ptb_df$`TTE FP Equity`, 1)
+ptb_df$`SAN FP Equity`    = (ptb_df$`SAN FP Equity`  - Lag(ptb_df$`SAN FP Equity`, 1)) / Lag(ptb_df$`SAN FP Equity`, 1)
+ptb_df$`ABI BB Equity`    = (ptb_df$`ABI BB Equity` - Lag(ptb_df$`ABI BB Equity`, 1)) / Lag(ptb_df$`ABI BB Equity`, 1)
+ptb_df$`SU FP Equity`     = (ptb_df$`SU FP Equity` - Lag(ptb_df$`SU FP Equity`, 1)) / Lag(ptb_df$`SU FP Equity`, 1)
+ptb_df$`DAI GR Equity`    = (ptb_df$`DAI GR Equity` - Lag(ptb_df$`DAI GR Equity`, 1)) / Lag(ptb_df$`DAI GR Equity`, 1)
+ptb_df$`ITX SM Equity`    = (ptb_df$`ITX SM Equity` - Lag(ptb_df$`ITX SM Equity`, 1)) / Lag(ptb_df$`ITX SM Equity`, 1)
+ptb_df$`KER FP Equity`    = (ptb_df$`KER FP Equity` - Lag(ptb_df$`KER FP Equity`, 1)) / Lag(ptb_df$`KER FP Equity`, 1)
+ptb_df$`AIR FP Equity`    = (ptb_df$`AIR FP Equity` - Lag(ptb_df$`AIR FP Equity`, 1)) / Lag(ptb_df$`AIR FP Equity`, 1)
+ptb_df$`ALV GR Equity`    = (ptb_df$`ALV GR Equity` - Lag(ptb_df$`ALV GR Equity`, 1)) / Lag(ptb_df$`ALV GR Equity`, 1)
+ptb_df$`EL FP Equity`     = (ptb_df$`EL FP Equity` - Lag(ptb_df$`EL FP Equity`, 1)) / Lag(ptb_df$`EL FP Equity`, 1)
+ptb_df$`DTE GR Equity`    = (ptb_df$`DTE GR Equity` - Lag(ptb_df$`DTE GR Equity`, 1)) / Lag(ptb_df$`DTE GR Equity`, 1)
+ptb_df$`AI FP Equity`     = (ptb_df$`AI FP Equity` - Lag(ptb_df$`AI FP Equity`, 1)) / Lag(ptb_df$`AI FP Equity`, 1)
+ptb_df$`BNP FP Equity`    = (ptb_df$`BNP FP Equity` - Lag(ptb_df$`BNP FP Equity`, 1)) / Lag(ptb_df$`BNP FP Equity`, 1)
+ptb_df$`ENEL IM Equity`   = (ptb_df$`ENEL IM Equity` - Lag(ptb_df$`ENEL IM Equity`, 1)) / Lag(ptb_df$`ENEL IM Equity`, 1)
+ptb_df$`DPW GR Equity`    = (ptb_df$`DPW GR Equity` - Lag(ptb_df$`DPW GR Equity`, 1)) / Lag(ptb_df$`DPW GR Equity`, 1)
+ptb_df$`IBE SM Equity`    = (ptb_df$`IBE SM Equity` - Lag(ptb_df$`IBE SM Equity`, 1)) / Lag(ptb_df$`IBE SM Equity`, 1)
+ptb_df$`CS FP Equity`     = (ptb_df$`CS FP Equity` - Lag(ptb_df$`CS FP Equity`, 1)) / Lag(ptb_df$`CS FP Equity`, 1)
+ptb_df$`BMW GR Equity`    = (ptb_df$`BMW GR Equity` - Lag(ptb_df$`BMW GR Equity`, 1)) / Lag(ptb_df$`BMW GR Equity`, 1)
+ptb_df$`BAS GR Equity`    = (ptb_df$`BAS GR Equity` - Lag(ptb_df$`BAS GR Equity`, 1)) / Lag(ptb_df$`BAS GR Equity`, 1)
+ptb_df$`RI FP Equity`     = (ptb_df$`RI FP Equity` - Lag(ptb_df$`RI FP Equity`, 1)) / Lag(ptb_df$`RI FP Equity`, 1)
+ptb_df$`IFX GR Equity`    = (ptb_df$`IFX GR Equity` - Lag(ptb_df$`IFX GR Equity`, 1)) / Lag(ptb_df$`IFX GR Equity`, 1)
+ptb_df$`STLA IM Equity`   = (ptb_df$`STLA IM Equity` - Lag(ptb_df$`STLA IM Equity`, 1)) / Lag(ptb_df$`STLA IM Equity`, 1)
+ptb_df$`DG FP Equity`     = (ptb_df$`DG FP Equity` - Lag(ptb_df$`DG FP Equity`, 1)) / Lag(ptb_df$`DG FP Equity`, 1)
+ptb_df$`ADS GR Equity`    = (ptb_df$`ADS GR Equity`  - Lag(ptb_df$`ADS GR Equity`, 1)) / Lag(ptb_df$`ADS GR Equity`, 1)
+ptb_df$`INGA NA Equity`   = (ptb_df$`INGA NA Equity` - Lag(ptb_df$`INGA NA Equity`, 1)) / Lag(ptb_df$`INGA NA Equity`, 1)
+ptb_df$`SAN SM Equity`    = (ptb_df$`SAN SM Equity` - Lag(ptb_df$`SAN SM Equity`, 1)) / Lag(ptb_df$`SAN SM Equity`, 1)
+ptb_df$`SAF FP Equity`    = (ptb_df$`SAF FP Equity` - Lag(ptb_df$`SAF FP Equity`, 1)) / Lag(ptb_df$`SAF FP Equity`, 1)
+ptb_df$`BAYN GR Equity`   = (ptb_df$`BAYN GR Equity` - Lag(ptb_df$`BAYN GR Equity`, 1)) / Lag(ptb_df$`BAYN GR Equity`, 1)
+ptb_df$`ENI IM Equity`    = (ptb_df$`ENI IM Equity` - Lag(ptb_df$`ENI IM Equity`, 1)) / Lag(ptb_df$`ENI IM Equity`, 1)
+ptb_df$`ISP IM Equity`    = (ptb_df$`ISP IM Equity` - Lag(ptb_df$`ISP IM Equity`, 1)) / Lag(ptb_df$`ISP IM Equity`, 1)
+ptb_df$`BN FP Equity`     = (ptb_df$`BN FP Equity` - Lag(ptb_df$`BN FP Equity`, 1)) / Lag(ptb_df$`BN FP Equity`, 1)
+ptb_df$`MUV2 GR Equity`   = (ptb_df$`MUV2 GR Equity` - Lag(ptb_df$`MUV2 GR Equity`, 1)) / Lag(ptb_df$`MUV2 GR Equity`, 1)
+ptb_df$`BBVA SM Equity`   = (ptb_df$`BBVA SM Equity` - Lag(ptb_df$`BBVA SM Equity`, 1)) / Lag(ptb_df$`BBVA SM Equity`, 1)
+ptb_df$`CRH ID Equity`    = (ptb_df$`CRH ID Equity` - Lag(ptb_df$`CRH ID Equity`, 1)) / Lag(ptb_df$`CRH ID Equity`, 1)
+ptb_df$`KNEBV FH Equity`  = (ptb_df$`KNEBV FH Equity` - Lag(ptb_df$`KNEBV FH Equity`, 1)) / Lag(ptb_df$`KNEBV FH Equity`, 1)
+ptb_df$`AD NA Equity`     = (ptb_df$`AD NA Equity` - Lag(ptb_df$`AD NA Equity`, 1)) / Lag(ptb_df$`AD NA Equity`, 1)
+ptb_df$`VNA GR Equity`    = (ptb_df$`VNA GR Equity` - Lag(ptb_df$`VNA GR Equity`, 1)) / Lag(ptb_df$`VNA GR Equity`, 1)
+ptb_df$`PHIA NA Equity`   = (ptb_df$`PHIA NA Equity` - Lag(ptb_df$`PHIA NA Equity`, 1)) / Lag(ptb_df$`PHIA NA Equity`, 1)
+ptb_df$`DB1 GR Equity`    = (ptb_df$`DB1 GR Equity` - Lag(ptb_df$`DB1 GR Equity`, 1)) / Lag(ptb_df$`DB1 GR Equity`, 1)
+ptb_df$`FLTR ID Equity`   = (ptb_df$`FLTR ID Equity` - Lag(ptb_df$`FLTR ID Equity`, 1)) / Lag(ptb_df$`FLTR ID Equity`, 1)
+
+```
+
+
+```{r}
+# On définit la target comme suit
+y = mr$volatily
+```
+
+Comme variables explicatives du modèle, on  l'exces return et le PtoB.
+On récupérera ainsi pour la date du 30/04/21 leurs différentes valeurs.
+```{r}
+# On va prendre la date du 30/04/2021
+msci[9, ]
+```
+
+
+```{r}
+msci$msci = 252.27
+
+# On récup pour la même date les valeurs des PtoB
+ptb_df2 = ptb_df[77,]
+ptb_df2
+```
+```{r}
+# On récup pour la même date les valeurs des rendements
+mr[, c(77)]
+```
+On sait que l'exces return est égale à la valeur du rendement ôtée de MSCI value pour la même date.
+```{r}
+X = as.data.frame(t(ptb_df2[2:47]))
+names(X) = "PtoB"
+
+#rentabilité = mr$`77`
+X$`exces return` = mr$`77` - msci$msci[1:46]
+
+# X est la matrice design
+data = cbind(X, y)
+
+#data est la base de données finales
+```
+
+
+## RPART DE CART
+```{r}
+model <- rpart(y ~., data = data)
+#plotcp(model)
+
+rpart.plot(model)
+
+pred_base <- predict(object=model,newdata = data)
+
+rmse_base <- rmse(actual=data$y,predicted = pred_base )
+print("RMSE: ")
+rmse_base
+```
+
+Pruner l'algorithme ? 
+
+```{r}
+model$cptable
+```
+
+
+```{r}
+index <- 4
+cp_opt <- model$cptable[index, "CP"]
+
+# Prune the model (to optimized cp value)
+model_opt <- prune(tree = model, 
+                         cp = cp_opt)
+
+pred_base2 <- predict(object=model_opt ,
+                newdata = data)
+
+rmse_base2 <- rmse(actual=data$y,
+                predicted = pred_base2 )
+
+rmse_base2
+```
+
+
+```{r}
+index <- 3
+cp_opt <- model$cptable[index, "CP"]
+
+# Prune the model (to optimized cp value)
+model_opt <- prune(tree = model, 
+                         cp = cp_opt)
+
+pred_base2 <- predict(object=model_opt ,
+                newdata = data)
+
+
+rmse_base2 <- rmse(actual=data$y, #Actual values
+     predicted = pred_base2 )
+
+rmse_base2
+
+```
+
+Pas la peine de pruner, le modèle avec la rmse la plus faible est le modèle initial.
+
+
+```{r}
+library("partykit")
+node_dynamite <- function(obj, factor = 1,
+                          col = "black",
+                          fill = "lightgray",
+                          bg = "white",
+                          width = 0.5,
+                          yscale = NULL,
+                          ylines = 3,
+                          cex = 0.5,
+                          id = TRUE,
+                          mainlab = NULL, 
+                          gp = gpar())
+{
+    ## observed data/weights and tree fit
+    y <- obj$fitted[["(response)"]]
+    stopifnot(is.numeric(y))
+    g <- obj$fitted[["(fitted)"]]
+    w <- obj$fitted[["(weights)"]]
+    if(is.null(w)) w <- rep(1, length(y))
+
+    ## (weighted) means and standard deviations by node
+    n <- tapply(w, g, sum)
+    m <- tapply(y * w, g, sum)/n
+    s <- sqrt(tapply((y - m[factor(g)])^2 * w, g, sum)/(n - 1))
+
+    if (is.null(yscale)) 
+        yscale <- c(min(c(0, (m - factor * s) * 1.1)), max(c(0, (m + factor * s) * 1.1)))
+
+    ### panel function for boxplots in nodes
+    rval <- function(node) {
+
+        ## extract data
+        nid <- id_node(node)
+        mid <- m[as.character(nid)]
+        sid <- s[as.character(nid)]
+        wid <- n[as.character(nid)]
+
+        top_vp <- viewport(layout = grid.layout(nrow = 2, ncol = 3,
+                           widths = unit(c(ylines, 1, 1), 
+                                         c("lines", "null", "lines")),  
+                           heights = unit(c(1, 1), c("lines", "null"))),
+                           width = unit(1, "npc"), 
+                           height = unit(1, "npc") - unit(2, "lines"),
+               name = paste("node_dynamite", nid, sep = ""),
+               gp = gp)
+
+        pushViewport(top_vp)
+        grid.rect(gp = gpar(fill = bg, col = 0))
+
+        ## main title
+        top <- viewport(layout.pos.col=2, layout.pos.row=1)
+        pushViewport(top)
+        if (is.null(mainlab)) { 
+      mainlab <- if(id) {
+        function(id, nobs) sprintf("Node %s (n = %s)", id, nobs)
+      } else {
+        function(id, nobs) sprintf("n = %s", nobs)
+      }
+        }
+    if (is.function(mainlab)) {
+          mainlab <- mainlab(names(obj)[nid], wid)
+    }
+        grid.text(mainlab)
+        popViewport()
+
+        plot <- viewport(layout.pos.col = 2, layout.pos.row = 2,
+                         xscale = c(0, 1), yscale = yscale,
+             name = paste0("node_dynamite", nid, "plot"),
+             clip = FALSE)
+
+        pushViewport(plot)
+
+        grid.yaxis()
+        grid.rect(gp = gpar(fill = "transparent"))
+    grid.clip()
+
+    xl <- 0.5 - width/8
+    xr <- 0.5 + width/8
+
+        ## box & whiskers
+        grid.rect(unit(0.5, "npc"), unit(0, "native"), 
+                  width = unit(width, "npc"), height = unit(mid, "native"),
+                  just = c("center", "bottom"), 
+                  gp = gpar(col = col, fill = fill))
+        grid.lines(unit(0.5, "npc"), 
+                   unit(mid + c(-1, 1) * factor * sid, "native"), gp = gpar(col = col))
+        grid.lines(unit(c(xl, xr), "npc"), unit(mid - factor * sid, "native"), 
+                   gp = gpar(col = col))
+        grid.lines(unit(c(xl, xr), "npc"), unit(mid + factor * sid, "native"), 
+                   gp = gpar(col = col))
+
+        upViewport(2)
+    }
+
+    return(rval)
+}
+class(node_dynamite) <- "grapcon_generator"
+p <- as.party(rpart(y ~., data = data))
+plot(p, terminal_panel = node_dynamite)
+```
+
+#### Analyse des classifications proposées
+Le modèle fournit les indications suivantes : 
+
+ - lorsque l'excès returns est inférieur à - 257.925, les 7 titres vont avoir une volatilité d'environ 9.1% (Node 7)
+ 
+ - lorsque l'excès returns est inférieur à -250.879, les 18 titres vont avoir un une volatilité d'environ 6.6% (Node 3)
+ 
+ - les 7 stocks qui ont un excès returns supérieur à -250.879 et un PtoB inférieur à 0.036,  auront une volatilité d'environ 8.5% (Node 6)
+ 
+ - enfin, Les stocks qui ont un PtoB supérieur à 0.036 et excès returns supérieur à -250.879 auront une volatilité d'environ 7.2% (Node 5).
+
+
+
+## KMEANS
+
+Avant tout, on va essayer de déterminer le nombre optimal de clusters par la méthode du coude.
+```{r}
+# Utilisation que des monthly returns
+x = mr[, c(2:84)]
+rownames(x) <- mr$`1`
+# Nombre de clusters optimal ? 
+x <- scale(x)
+set.seed(123)
+fviz_nbclust(x, kmeans, method = "wss")
+```
+
+On voit qu'il y a un break au niveau du cluster 4, on choisira 4 clusters pour la suite.
+```{r}
+#Visualisation des clusters
+clusters = kmeans(x, centers = 4)
+fviz_cluster(clusters, data = x, ellipse.type = "convex", palette = "jco", repel = TRUE, ggtheme = theme_minimal())
+```
+
+```{r}
+#Taille des 4 clusters
+clusters$size
+```
+
+```{r}
+# Informations sur les clusters
+clusters
+```
+
+
+Le Kmeans a regroupé les stocks en 4 clusters de 6, 6, 13 et 21 observations. On voit nettement une séparation des frontières (sauf entre les clusters 2 et 4 où un titre semble appartenir simultanément aux 2 clusters) avec une proportion de la variance inter-classe sur la variance totale de 23.6%.
+
+
+On voit que comme l'algorithme Kmeans, le Cart a séparé les observations en 4 groupes. Le CART sépare en groupes de 7, 7, 12 et 20 obs, ce qui est relativement proche de la répartition de celle du Kmeans. 
+
+Voici les différents clusters suggérés par le Kmeans.
+```{r}
+clusters$cluster
+```
+
+
+
+
