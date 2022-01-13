@@ -1,0 +1,226 @@
+---
+title: "TP2"
+author: "Abdoul Aziz Berrada - Amira Slimene - Rachid Krita - Nicolas Turpin"
+date: "12/25/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+#Library
+library(PerformanceAnalytics)
+library(timeSeries)
+library(fPortfolio)
+library(openintro)
+library(Hmisc)
+```
+
+
+```{r}
+AEIS <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/AEIS.csv")
+AIR <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/AIR.csv")
+BH <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/BH.csv")
+BJRI <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/BJRI.csv")
+CIR <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/CIR.csv")
+CROX <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/CROX.csv")
+EBS <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/EBS.csv")
+ECOL <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/ECOL.csv")
+ECPG <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/ECPG.csv")
+FARO <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/FARO.csv")
+GHL <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/GHL.csv")
+IRBT <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/IRBT.csv")
+KAMN <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/KAMN.csv")
+LGND <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/LGND.csv")
+NSP <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/NSP.csv")
+NTUS <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/NTUS.csv")
+OXM <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/OXM.csv")
+UFPI <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/UFPI.csv")
+WABC <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/WABC.csv")
+ZUMZ <- read.csv("/Users/abdoul_aziz_berrada/Documents/M2_MOSEF/Finance/inputs/ZUMZ.csv")
+
+d = cbind(ZUMZ$Date, ZUMZ$Close, WABC$Close,  UFPI$Close, OXM$Close, NTUS$Close, NSP$Close, 
+             LGND$Close, KAMN$Close, IRBT$Close , GHL$Close, FARO$Close,ECPG$Close,
+             ECOL$Close, EBS$Close,CROX$Close, CIR$Close, BJRI$Close, BH$Close , 
+             AIR$Close, AEIS$Close)
+
+all_close = as.data.frame(d)
+
+names(all_close) = c("Date","Close_ZUMZ", "Close_WABC", "Close_UFPI", "Close_OXM", "Close_NTUS",  "Close_NSP", "Close_LGND", 
+             "Close_KAMN", "Close_IRBT", "Close_GHL", "Close_FARO", "Close_ECPG", "Close_ECOL", "Close_EBS", "Close_CROX",
+             "Close_CIR", "Close_BJRI", "Close_BH", "Close_AIR", "Close_AEIS")
+
+all_close[, c(2:21)] <- sapply(all_close[, c(2:21)], as.numeric)
+
+```
+
+
+## Statistiques descriptives
+```{r}
+summary(all_close[, c(2:21)])
+```
+
+```{r}
+kurtosis(all_close[, c(2:21)])
+```
+
+```{r}
+skewness(all_close[, c(2:21)])
+```
+```{r}
+# Histogrames
+a = all_close[, c(2:21)]
+a1 = a[, c(1:5)]
+a2 = a[, c(6:10)]
+a3 = a[, c(11:15)]
+a4 = a[, c(16:20)]
+hist.data.frame(a1)
+hist.data.frame(a2)
+hist.data.frame(a3)
+hist.data.frame(a4)
+
+```
+#### Interprétation:
+On remarque que la quasi totalité des stocks ne suivent pas la loi normale, leurs médianes sont différenciées de leurs moyennes, ceci se voit par leurs skewness non nulles. De plus les kurtosis relativement éloignées de 3. Un apercu des histogrammes de quelques stocks nous confirme cette tendance.
+
+## Performance cumulée des titres
+```{r}
+all_close$Date = strptime(all_close$Date, format =  "%Y-%m-%d")
+
+returns = Return.calculate(xts(all_close[, c(2:21)], order.by = all_close$Date), method="discrete")[2:1235, ]
+
+names(returns) = c("return_ZUMZ", "return_WABC", "return_UFPI", "return_OXM", "return_NTUS", "return_NSP", "return_LGND", 
+             "return_KAMN", "return_IRBT", "return_GHL", "return_FARO", "return_ECPG", "return_ECOL", "return_EBS", "return_CROX",
+             "return_CIR", "return_BJRI", "return_BH", "return_AIR", "return_AEIS")
+#returns
+```
+
+```{r}
+chart.CumReturns(
+  returns,
+  legend.loc = 'left',
+  wealth.index = TRUE,
+  geometric = TRUE,
+  colorset = (1:20),
+  begin = c("axis"),
+  plot.engine = "default"
+)
+
+```
+On note que les titres ont des performances cumulées relativement proches sur toute la période. 
+Toutefois, Crocs, Inc. (CROX) superforme tous les titres et explose vers Mars 2020. 
+
+## Calculer des indicateurs synthétiques
+```{r}
+SharpeRatio(
+  returns,
+  Rf = 0,
+  p = 0.95,
+  FUN = c("StdDev", "VaR", "ES"),
+  weights = NULL,
+  annualize = FALSE,
+  SE = FALSE,
+  SE.control = NULL)
+```
+
+```{r}
+OmegaSharpeRatio(returns)
+```
+
+
+```{r}
+VaR(returns, method="historical")
+```
+## Plan rendement volatilité
+```{r}
+rendements = returns
+names(rendements) = c("ZUMZ", "WABC", "UFPI", "OXM", "NTUS", "NSP", "LGND", 
+             "KAMN", "IRBT", "GHL", "FARO", "ECPG", "ECOL", "EBS", "CROX",
+             "CIR", "BJRI", "BH", "AIR", "AEIS")
+
+chart.RiskReturnScatter(rendements, scale = 252)
+#chart.R
+```
+
+## Ensemble des portefeuilles qu’on peut constituer
+```{r}
+#frontierPlot(Frontier)
+returns_<-as.timeSeries(returns)
+Frontier<-portfolioFrontier(returns_)
+plot(Frontier,1)
+```
+```{r}
+points <- frontierPoints(Frontier, frontier = "both",
+                         return =  "mu" , risk = "Sigma",
+                         auto = TRUE)
+#points
+```
+
+```{r}
+Frontier
+```
+
+## Portefeuille à variance minimale
+```{r}
+plot(Frontier,1)
+plot(Frontier,2) # ajouter le point de variance minimale
+plot(Frontier,3) # Portefeuille de tangence
+```
+Le portefuille à variance minimale est le portefueille en point rouge.
+Ses coordonnées sont les suivantes : 
+```{r}
+# Calcule le point de variance minimum et ses poids
+mcportfolio <- minvariancePortfolio(returns_, spec = portfolioSpec())
+mcportfolio
+```
+
+
+## Portefeuille équipondérant
+```{r}
+plot(Frontier,1)
+plot(Frontier,5) # Equal Weights Portfolio
+```
+
+```{r}
+plot(Frontier,1)
+ewp <- equalWeightsPoints(Frontier , return = c("mean", "mu"), risk = c("Cov", "Sigma", "CVaR", "VaR"),
+                          auto = TRUE)
+```
+```{r}
+
+ewp
+```
+```{r}
+sharpe = 0.0006882089/0.0184779
+sharpe
+```
+Le ratio est < 0.1, on dira que les performances du titre sont avec une volatilité élevée.
+
+## Contrainte de volatilité = 0.1
+On calcule le portefeuille Optimal qui permet de Maximiser le rendement
+On définit le niveau de risque à 10%
+```{r}
+# sans vente à découvert
+defaultSpec <- portfolioSpec()
+setTargetRisk(defaultSpec) <- 0.1
+
+# On calcule les portefeuilles efficients pour ce niveau de risque
+setSolver(defaultSpec)= "solveRshortExact" 
+
+long <- maxreturnPortfolio(returns_, defaultSpec, constraints = "LongOnly")
+
+long@portfolio
+
+```
+Les poids nous montrent qu'il s'agit bien d'un Long, on note que mu et mean ont les mêmes valeurs.
+```{r}
+# avec ventes à découvert
+
+defaultSpec <- portfolioSpec()
+setTargetRisk(defaultSpec) <- 0.1
+setSolver(defaultSpec)= "solveRquadprog" 
+
+# On calcule les portefeuilles efficients pour ce niveau de risque
+short <- maxreturnPortfolio(returns_, defaultSpec, constraints ="short")
+short@portfolio
+```
+À l'instar du LongOnly, les signes et les valeurs des différents poids nous montrent qu'il s'agit bien d'une vente à découvert, on note que mu et mean ont les mêmes valeurs.
